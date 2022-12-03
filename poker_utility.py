@@ -7,7 +7,7 @@ class Card:
     }
 
     rank_mapping = {
-        str(i) for i in range(2,11)
+        str(i): i for i in range(2,11)
     }
     rank_mapping["ace"] = 14
     rank_mapping["jack"] = 11
@@ -45,16 +45,37 @@ class Card:
         self._rank = value
 
     @property
-    def suite_value(self):
+    def suit_value(self):
         return Card.suit_mapping[self._suit]
     
     @property
-    def suite(self):
+    def suit(self):
         return self._suit
     
-    @suite.setter
-    def suite(self, value):
+    @suit.setter
+    def suit(self, value):
         self._suite = value
+
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Card):
+            return self._rank.__eq__(other._rank) and self._suit.__eq__(other._suit)
+        return False
+    
+    def __ne__(self, other):
+        """Overrides the default implementation (unnecessary in Python 3 :/)"""
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self._rank.__hash__(), self._suit.__hash__()))
+
+    def __repr__(self) -> str:
+        return f"(rank: {self._rank}, suit: {self._suit})"
+
+    def __str__(self) -> str:
+        return f"(rank: {self._rank}, suit: {self._suit})"
+
+    
 
 class Hand:
     def __init__(self, cards) -> None:
@@ -186,7 +207,8 @@ class Hand:
         three_kind = self.cards_in_three_of_a_kind()
         pair = self.cards_in_pair()
         if len(three_kind) != 0 and len(pair) != 0:
-            return three_kind.extend(pair)
+            three_kind.extend(pair)
+            return three_kind
         else:
             return []
 
@@ -217,7 +239,8 @@ class Hand:
         if len(kinds) > 3:
             raise "Error: invalid kind count."
         kinds.sort(key=lambda x: x[0].rank_value)
-        return kinds[-1].extend(kinds[-2])
+        kinds[-1].extend(kinds[-2])
+        return kinds[-1]
 
     def cards_in_pair(self):
         """
@@ -237,7 +260,7 @@ class Hand:
         """
         @returns the card with the highest rank_value.
         """
-        return max(self.cards, key=lambda x: x.rank_value)
+        return [max(self.cards, key=lambda x: x.rank_value)]
 
     def get_card_pairs(self):
         """
