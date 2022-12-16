@@ -2,6 +2,7 @@ import copy
 import random
 from poker_utility import *
 
+# Monte-Carlo Poker Simulator that is 100% not for cheating on poker night.
 # Concept, simulate 1000 poker games with x players, removing your hand from the pot.
 # Calculate % wins given your hand given the current knowledge (cards revealed)
 global_deck = []
@@ -57,6 +58,35 @@ class PokerGame:
             self.me.hand.add_card(card)
             for player in self.players.keys():
                 self.players[player].hand.add_card(card)
+        return self.check_if_i_win()
+
+    def play_cheating(self, N):
+        """
+        Play the game as normal with no assumptions, being dealt and revealing random cards but
+        folding if the odds seem bad based on monte carlo simulation.
+        @returns 1 if you win, 0 if you tie, -1 if you draw, and -2 if you fold.
+        """
+        self.deal_real()
+
+        win, tie, loss = self.run_odds(N)
+        if win + tie < 30:
+            return -2 # draw
+
+        revealed = []
+        rounds_left = 5
+        for i in range(rounds_left):
+            card = random.choice(self.deck)
+            revealed.append(card)
+            self.deck.remove(card)
+
+            win, tie, loss = self.run_odds(N)
+            if win + tie < 30:
+                return -2 # draw
+
+            self.me.hand.add_card(card)
+            for player in self.players.keys():
+                self.players[player].hand.add_card(card)
+
         return self.check_if_i_win()
 
     def deal_real(self):
@@ -132,23 +162,46 @@ class PokerGame:
         else:
             return 1
 
+    def run_odds(self, N):
+        wins = 0
+        draws = 0
+        losses = 0
+
+        for i in range(N):
+            a = PokerGame(len(self.players))
+            #result = a.play_real()
+            result = a.play_simulated(Card("2", "hearts"), Card("4", "spades"), [Card("jack", "clubs")])
+            if result == 1:
+                wins += 1
+            elif result == 0:
+                draws += 1
+            else:
+                losses += 1
+
+        #print(f"wins: {wins * 100 / N}%, draws: {draws * 100 / N}%, losses: {losses * 100 / N}%")
+        return (wins * 100 / N, draws * 100 / N, losses * 100 / N)
+
 wins = 0
 draws = 0
 losses = 0
+folds = 0
 
-N = 10000
+N = 10
 
 for i in range(N):
     if i % (N//10) == 0:
         print(f"{i * 100 / N}% complete...")
     a = PokerGame(1)
     #result = a.play_real()
-    result = a.play_simulated(Card("2", "hearts"), Card("4", "spades"), [Card("jack", "clubs")])
+    #result = a.play_simulated(Card("2", "hearts"), Card("4", "spades"), [Card("jack", "clubs")])
+    result = a.play_cheating(1000)
     if result == 1:
         wins += 1
     elif result == 0:
         draws += 1
+    elif result == -2:
+        folds += 1
     else:
         losses += 1
 
-print(f"wins: {wins * 100 / N}%, draws: {draws * 100 / N}%, losses: {losses * 100 / N}%")
+print(f"wins: {wins * 100 / N}%, draws: {draws * 100 / N}%, losses: {losses * 100 / N}%, folds: {folds * 100 / N}%")
